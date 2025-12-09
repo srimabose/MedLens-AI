@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
-import { authAPI } from '../lib/auth.js'
+import { authAPI } from './auth.js'
 
 function Login({ onSwitchToRegister }) {
   const [formData, setFormData] = useState({

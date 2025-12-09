@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { checkMedicationInteractions } from '../lib/api.js'
+import { checkMedicationInteractions } from '../components/api.js'
 import Loader from '../components/Loader'
 import FeatureNavigation from '../components/FeatureNavigation'
 
