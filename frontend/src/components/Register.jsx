@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { authAPI } from './auth.js'
-import { simpleRegister, testRegistration, fileRegister } from './api.js'
+import { fileRegister } from './api.js'
 
 function Register({ onSwitchToLogin }) {
   const [formData, setFormData] = useState({
@@ -49,27 +49,7 @@ function Register({ onSwitchToLogin }) {
     }
   }
 
-  const handleTestRegistration = async () => {
-    try {
-      const testData = {
-        email: formData.email || 'test@example.com',
-        password: formData.password || 'testpass123',
-        full_name: formData.full_name || 'Test User'
-      }
-      
-      const response = await testRegistration(testData)
-      console.log('🔍 Test result:', response)
-      
-      if (response.status === 'success') {
-        setError(`✅ Test passed: ${response.message}`)
-      } else {
-        setError(`❌ Test failed: ${response.message}`)
-      }
-    } catch (error) {
-      console.error('Test error:', error)
-      setError(`❌ Test error: ${error.message}`)
-    }
-  }
+
 
   const handleGoogleLogin = async () => {
     try {
@@ -161,23 +141,13 @@ function Register({ onSwitchToLogin }) {
           />
         </div>
 
-        <div className="space-y-2">
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-gradient-to-r from-primary-500 to-secondary-500 text-white py-2 px-4 rounded-md hover:opacity-90 transition-opacity disabled:opacity-50"
-          >
-            {loading ? 'Creating account...' : 'Create Account'}
-          </button>
-          
-          <button
-            type="button"
-            onClick={handleTestRegistration}
-            className="w-full bg-gray-500 text-white py-1 px-4 rounded-md hover:bg-gray-600 transition-colors text-sm"
-          >
-            🔍 Test Backend Connection
-          </button>
-        </div>
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full bg-gradient-to-r from-primary-500 to-secondary-500 text-white py-2 px-4 rounded-md hover:opacity-90 transition-opacity disabled:opacity-50"
+        >
+          {loading ? 'Creating account...' : 'Create Account'}
+        </button>
       </form>
 
       <div className="mt-6">
