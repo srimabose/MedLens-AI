@@ -1,8 +1,11 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException, Form, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from typing import List, Optional
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 from app.config import settings
 from app.schemas import ChatRequest, AnalysisResponse, ChatResponse, TranslateRequest
@@ -32,6 +35,40 @@ app.add_middleware(
 
 # Include authentication routes
 app.include_router(auth_router)
+
+# Serve static files (frontend) in production
+if settings.is_production:
+    # Check if frontend dist directory exists (moved to backend directory during build)
+    frontend_dist = Path(__file__).parent / "dist"
+    if frontend_dist.exists():
+        # Mount static assets
+        assets_dir = frontend_dist / "assets"
+        if assets_dir.exists():
+            app.mount("/assets", StaticFiles(directory=str(assets_dir)), name="assets")
+        
+        @app.get("/{full_path:path}")
+        async def serve_frontend(full_path: str):
+            """Serve frontend files and handle client-side routing"""
+            # Skip API routes, docs, and other backend endpoints
+            if full_path.startswith((
+                "analyze-report", "chat", "translate-report", "reports", 
+                "check-medication-interactions", "generate-diet-plan", 
+                "analyze-health-trends", "check-symptoms",
+                "auth/", "docs", "redoc", "openapi.json"
+            )):
+                raise HTTPException(status_code=404, detail="Not found")
+            
+            # Try to serve the requested file
+            file_path = frontend_dist / full_path
+            if file_path.is_file():
+                return FileResponse(file_path)
+            
+            # For client-side routing, serve index.html
+            index_path = frontend_dist / "index.html"
+            if index_path.exists():
+                return FileResponse(index_path)
+            else:
+                raise HTTPException(status_code=404, detail="Frontend not found")
 
 gemini_client = GeminiClient(api_key=settings.GEMINI_API_KEY)
 
