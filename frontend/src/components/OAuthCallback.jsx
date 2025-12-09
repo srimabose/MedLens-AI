@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
-import { authAPI } from '../lib'
+import { authAPI } from '../lib/index.js'
 import Loader from './Loader'
 
 function OAuthCallback({ provider }) {

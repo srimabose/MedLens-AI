@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { analyzeReport } from '../lib'
+import { analyzeReport } from '../lib/index.js'
 import Loader from './Loader'
 import LanguageSelector from './LanguageSelector'
 

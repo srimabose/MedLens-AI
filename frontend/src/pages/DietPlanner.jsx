@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { generateDietPlan } from '../lib'
+import { generateDietPlan } from '../lib/index.js'
 import Loader from '../components/Loader'
 import LanguageSelector from '../components/LanguageSelector'
 import FeatureNavigation from '../components/FeatureNavigation'

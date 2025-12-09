@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { chatWithAI } from '../lib'
+import { chatWithAI } from '../lib/index.js'
 import Loader from './Loader'
 import VoiceChat from './VoiceChat'
 import LanguageSelector from './LanguageSelector'
