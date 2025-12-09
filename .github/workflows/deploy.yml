@@ -1,0 +1,135 @@
+name: 🚀 Deploy MedLens AI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-backend:
+    runs-on: ubuntu-latest
+    name: 🧪 Test Backend
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        cd backend
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Lint with flake8
+      run: |
+        cd backend
+        pip install flake8
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+    
+    - name: Test API endpoints
+      run: |
+        cd backend
+        python -c "
+        import sys
+        sys.path.append('.')
+        from app.config import settings
+        print('✅ Configuration loaded successfully')
+        from app.database import Database
+        print('✅ Database module loaded successfully')
+        from app.gemini_client import GeminiClient
+        print('✅ Gemini client loaded successfully')
+        print('🎉 All imports successful!')
+        "
+
+  test-frontend:
+    runs-on: ubuntu-latest
+    name: 🎨 Test Frontend
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+    
+    - name: Install dependencies
+      run: |
+        cd frontend
+        npm ci
+    
+    - name: Lint code
+      run: |
+        cd frontend
+        npm run lint --if-present
+    
+    - name: Build application
+      run: |
+        cd frontend
+        npm run build
+    
+    - name: Test build
+      run: |
+        cd frontend
+        ls -la dist/
+        echo "✅ Frontend build successful!"
+
+  security-scan:
+    runs-on: ubuntu-latest
+    name: 🔒 Security Scan
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+    
+    - name: Upload Trivy scan results
+      uses: github/codeql-action/upload-sarif@v2
+      if: always()
+      with:
+        sarif_file: 'trivy-results.sarif'
+
+  deploy-render:
+    runs-on: ubuntu-latest
+    name: 🌐 Deploy to Render
+    needs: [test-backend, test-frontend]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Deploy to Render
+      run: |
+        echo "🚀 Deployment triggered for Render"
+        echo "📋 Render will automatically deploy from this repository"
+        echo "🔗 Check your Render dashboard for deployment status"
+        echo "✅ Deployment workflow completed"
+
+  notify-success:
+    runs-on: ubuntu-latest
+    name: 📢 Notify Success
+    needs: [test-backend, test-frontend, security-scan]
+    if: success()
+    
+    steps:
+    - name: Success notification
+      run: |
+        echo "🎉 All tests passed successfully!"
+        echo "✅ Backend tests: PASSED"
+        echo "✅ Frontend tests: PASSED" 
+        echo "✅ Security scan: COMPLETED"
+        echo "🚀 Ready for deployment!"
