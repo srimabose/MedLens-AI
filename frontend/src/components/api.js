@@ -103,3 +103,13 @@ export const simpleRegister = async (userData) => {
   const response = await api.post('/simple-register', userData)
   return response.data
 }
+
+export const fileRegister = async (userData) => {
+  const response = await api.post('/file-register', userData)
+  return response.data
+}
+
+export const fileLogin = async (userData) => {
+  const response = await api.post('/file-login', userData)
+  return response.data
+}

@@ -173,6 +173,103 @@ async def simple_register(data: dict):
         return {"status": "error", "message": str(e), "details": traceback.format_exc()}
 
 
+@app.post("/file-register")
+async def file_register(data: dict):
+    """File-based registration that doesn't require MongoDB"""
+    try:
+        email = data.get("email")
+        password = data.get("password") 
+        full_name = data.get("full_name")
+        
+        print(f"🔄 File-based registration for: {email}")
+        
+        # Import simple auth
+        from app.simple_auth import create_simple_user
+        from app.auth_utils import create_access_token
+        from datetime import timedelta
+        
+        # Create user with file storage
+        user = create_simple_user(email, password, full_name)
+        
+        # Create token
+        access_token = create_access_token(
+            data={"sub": email}, 
+            expires_delta=timedelta(minutes=30)
+        )
+        
+        print(f"✅ File-based user created successfully: {email}")
+        
+        return {
+            "status": "success",
+            "access_token": access_token,
+            "token_type": "bearer",
+            "user": {
+                "id": user["id"],
+                "email": email,
+                "full_name": full_name,
+                "provider": "email",
+                "is_active": True
+            },
+            "message": "Account created with file-based storage"
+        }
+        
+    except ValueError as e:
+        return {"status": "error", "message": str(e)}
+    except Exception as e:
+        print(f"❌ File-based registration error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return {"status": "error", "message": str(e), "details": traceback.format_exc()}
+
+
+@app.post("/file-login")
+async def file_login(data: dict):
+    """File-based login that doesn't require MongoDB"""
+    try:
+        email = data.get("email")
+        password = data.get("password")
+        
+        print(f"🔄 File-based login for: {email}")
+        
+        # Import simple auth
+        from app.simple_auth import authenticate_simple_user
+        from app.auth_utils import create_access_token
+        from datetime import timedelta
+        
+        # Authenticate user
+        user = authenticate_simple_user(email, password)
+        if not user:
+            return {"status": "error", "message": "Invalid email or password"}
+        
+        # Create token
+        access_token = create_access_token(
+            data={"sub": email}, 
+            expires_delta=timedelta(minutes=30)
+        )
+        
+        print(f"✅ File-based login successful: {email}")
+        
+        return {
+            "status": "success",
+            "access_token": access_token,
+            "token_type": "bearer",
+            "user": {
+                "id": user["id"],
+                "email": email,
+                "full_name": user["full_name"],
+                "provider": "email",
+                "is_active": True
+            },
+            "message": "Login successful with file-based storage"
+        }
+        
+    except Exception as e:
+        print(f"❌ File-based login error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return {"status": "error", "message": str(e), "details": traceback.format_exc()}
+
+
 @app.post("/analyze-report")
 async def analyze_report(
     file: UploadFile = File(...),

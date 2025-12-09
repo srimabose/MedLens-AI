@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { authAPI } from './auth.js'
+import { fileLogin } from './api.js'
 
 function Login({ onSwitchToRegister }) {
   const [formData, setFormData] = useState({
@@ -17,10 +18,16 @@ function Login({ onSwitchToRegister }) {
     setError('')
 
     try {
-      const response = await authAPI.login(formData)
-      login(response.user, response.access_token)
+      // Try file-based login (no database required)
+      const response = await fileLogin(formData)
+      
+      if (response.status === 'success') {
+        login(response.user, response.access_token)
+      } else {
+        throw new Error(response.message || 'Login failed')
+      }
     } catch (error) {
-      setError(error.response?.data?.detail || 'Login failed')
+      setError(error.response?.data?.message || error.message || 'Login failed')
     } finally {
       setLoading(false)
     }

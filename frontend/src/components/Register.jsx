@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { authAPI } from './auth.js'
-import { simpleRegister, testRegistration } from './api.js'
+import { simpleRegister, testRegistration, fileRegister } from './api.js'
 
 function Register({ onSwitchToLogin }) {
   const [formData, setFormData] = useState({
@@ -28,8 +28,8 @@ function Register({ onSwitchToLogin }) {
     console.log('🔄 Starting registration for:', formData.email)
 
     try {
-      // Try simplified registration first
-      const response = await simpleRegister({
+      // Try file-based registration (no database required)
+      const response = await fileRegister({
         email: formData.email,
         password: formData.password,
         full_name: formData.full_name
