@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
-import { getUserReports, deleteReport } from '../lib/index.js'
+import { getUserReports, deleteReport } from '../lib/api.js'
 import UserProfile from './UserProfile'
 
 function Sidebar({ onSelectHistory, onNewChat, currentPage, isOpen, setIsOpen }) {

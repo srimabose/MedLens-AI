@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { analyzeHealthTrends } from '../lib/index.js'
+import { analyzeHealthTrends } from '../lib/api.js'
 import { saveToHistory } from '../components/Sidebar'
 import Loader from '../components/Loader'
 import LanguageSelector from '../components/LanguageSelector'

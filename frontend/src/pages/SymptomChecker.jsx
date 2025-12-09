@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { checkSymptoms } from '../lib/index.js'
+import { checkSymptoms } from '../lib/api.js'
 import Loader from '../components/Loader'
 import LanguageSelector from '../components/LanguageSelector'
 import FeatureNavigation from '../components/FeatureNavigation'
