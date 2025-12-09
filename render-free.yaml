@@ -1,0 +1,20 @@
+# Render Free Tier Deployment Configuration
+services:
+  - type: web
+    name: medlens-ai-free
+    env: python
+    plan: free
+    region: oregon
+    buildCommand: cd backend && pip install -r requirements.txt && cd ../frontend && npm install && npm run build && cp -r dist ../backend/
+    startCommand: cd backend && python -m uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: MONGODB_URL  
+        sync: false
+      - key: DATABASE_NAME
+        value: medlens_ai
+      - key: SECRET_KEY
+        value: your-secret-key-here-change-this
+      - key: ENVIRONMENT
+        value: production

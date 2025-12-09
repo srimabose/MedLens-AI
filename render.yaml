@@ -1,8 +1,10 @@
 services:
-  # Unified Web Service (Backend + Frontend)
+  # Unified Web Service (Backend + Frontend) - FREE TIER
   - type: web
     name: medlens-ai
     env: python
+    plan: free
+    region: oregon
     buildCommand: |
       # Install backend dependencies
       cd backend && pip install -r requirements.txt
@@ -19,16 +21,8 @@ services:
       - key: DATABASE_NAME
         value: medlens_ai
       - key: SECRET_KEY
-        generateValue: true
+        value: medlens-ai-secret-key-for-jwt-tokens-change-in-production-2024
       - key: ENVIRONMENT
         value: production
       - key: FRONTEND_URL
         value: https://medlens-ai.onrender.com
-      - key: GOOGLE_CLIENT_ID
-        sync: false
-      - key: GOOGLE_CLIENT_SECRET
-        sync: false
-      - key: FACEBOOK_CLIENT_ID
-        sync: false
-      - key: FACEBOOK_CLIENT_SECRET
-        sync: false
