@@ -1,6 +1,7 @@
 from motor.motor_asyncio import AsyncIOMotorClient
 from typing import Optional
 import os
+import ssl
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -14,7 +15,31 @@ class Database:
             mongodb_url = os.getenv("MONGODB_URL")
             if not mongodb_url:
                 raise ValueError("MONGODB_URL not found in environment variables")
-            cls.client = AsyncIOMotorClient(mongodb_url)
+            
+            try:
+                # First try with SSL context for MongoDB Atlas
+                ssl_context = ssl.create_default_context()
+                ssl_context.check_hostname = False
+                ssl_context.verify_mode = ssl.CERT_NONE
+                
+                # Connection options for Render deployment
+                connection_options = {
+                    'ssl_context': ssl_context,
+                    'serverSelectionTimeoutMS': 30000,
+                    'connectTimeoutMS': 30000,
+                    'socketTimeoutMS': 30000,
+                    'maxPoolSize': 10,
+                    'retryWrites': True,
+                    'w': 'majority'
+                }
+                
+                cls.client = AsyncIOMotorClient(mongodb_url, **connection_options)
+                
+            except Exception as e:
+                print(f"⚠️ SSL context connection failed, trying simple connection: {e}")
+                # Fallback to simple connection
+                cls.client = AsyncIOMotorClient(mongodb_url)
+                
         return cls.client
     
     @classmethod
@@ -28,6 +53,31 @@ class Database:
         if cls.client:
             cls.client.close()
             cls.client = None
+    
+    @classmethod
+    async def test_connection(cls):
+        """Test database connection"""
+        try:
+            client = cls.get_client()
+            # Test connection by pinging the database
+            await client.admin.command('ping')
+            
+            # Test database access
+            db = cls.get_database()
+            collections = await db.list_collection_names()
+            
+            return {
+                "status": "success",
+                "message": "Database connection successful",
+                "collections_count": len(collections),
+                "collections": collections[:5]  # Show first 5 collections
+            }
+        except Exception as e:
+            return {
+                "status": "error", 
+                "message": f"Database connection failed: {str(e)}",
+                "error_type": type(e).__name__
+            }
 
 # Get database instance
 def get_db():

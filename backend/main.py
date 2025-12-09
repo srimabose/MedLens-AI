@@ -85,8 +85,7 @@ async def test_register(data: dict):
         
         # Test database connection
         from app.database import Database
-        db = Database.get_database()
-        test_collection = await db.list_collection_names()
+        db_test = await Database.test_connection()
         
         return {
             "status": "success", 
@@ -95,11 +94,8 @@ async def test_register(data: dict):
                 "hash_created": bool(hashed),
                 "verification": verified
             },
-            "database_test": {
-                "connected": True,
-                "collections": len(test_collection)
-            },
-            "message": "All systems working"
+            "database_test": db_test,
+            "message": "All systems working" if db_test["status"] == "success" else "Database connection failed"
         }
     except Exception as e:
         print(f"❌ Test registration error: {str(e)}")
