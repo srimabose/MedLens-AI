@@ -31,6 +31,18 @@ export const analyzeReport = async (file, language = 'en') => {
   return response.data
 }
 
+export const analyzeReportNoAuth = async (file, language = 'en') => {
+  const formData = new FormData()
+  formData.append('file', file)
+  formData.append('language', language)
+  
+  const response = await api.post('/analyze-report-no-auth', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  })
+  
+  return response.data
+}
+
 export const chatWithAI = async (message, context = null) => {
   const response = await api.post('/chat', { message, context })
   return response.data

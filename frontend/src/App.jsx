@@ -44,7 +44,10 @@ function AppContent() {
     )
   }
 
-  if (!isAuthenticated) {
+  // Temporarily allow guest access for testing
+  const showAuthScreen = false // Set to true to require authentication
+  
+  if (!isAuthenticated && showAuthScreen) {
     return (
       <div className="min-h-screen flex flex-col medical-pattern">
         <div className="flex-1 py-8 px-4">
@@ -129,6 +132,15 @@ function AppContent() {
               )}
               <h1 className="text-5xl font-bold mb-3 drop-shadow-lg">🏥 MedLens AI</h1>
               <p className="text-xl opacity-90">Your Medical Report Explainer & Health Assistant</p>
+              
+              {!isAuthenticated && (
+                <div className="mt-4 bg-yellow-500/20 backdrop-blur-md border border-yellow-400/30 rounded-lg p-3 max-w-md mx-auto">
+                  <p className="text-sm text-yellow-100">
+                    🔓 <strong>Guest Mode:</strong> You can test all AI features without creating an account. 
+                    Reports won't be saved to history.
+                  </p>
+                </div>
+              )}
               
               {/* Feature Navigation */}
               {currentPage === 'upload' && (

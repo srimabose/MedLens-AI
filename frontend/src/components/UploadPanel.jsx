@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { analyzeReport } from './api.js'
+import { analyzeReport, analyzeReportNoAuth } from './api.js'
 import Loader from './Loader'
 import LanguageSelector from './LanguageSelector'
 
@@ -29,7 +29,8 @@ function UploadPanel({ onAnalysisComplete }) {
 
     setLoading(true)
     try {
-      const result = await analyzeReport(file, language)
+      // Use no-auth version for guest access
+      const result = await analyzeReportNoAuth(file, language)
       onAnalysisComplete(result, file.name, language)
     } catch (error) {
       console.error('Analysis failed:', error)
