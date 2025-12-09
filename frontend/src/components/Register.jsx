@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { authAPI } from './auth.js'
+import { simpleRegister, testRegistration } from './api.js'
 
 function Register({ onSwitchToLogin }) {
   const [formData, setFormData] = useState({
@@ -27,18 +28,46 @@ function Register({ onSwitchToLogin }) {
     console.log('🔄 Starting registration for:', formData.email)
 
     try {
-      const response = await authAPI.register({
+      // Try simplified registration first
+      const response = await simpleRegister({
         email: formData.email,
         password: formData.password,
         full_name: formData.full_name
       })
-      console.log('✅ Registration successful:', response)
-      login(response.user, response.access_token)
+      
+      if (response.status === 'success') {
+        console.log('✅ Registration successful:', response)
+        login(response.user, response.access_token)
+      } else {
+        throw new Error(response.message || 'Registration failed')
+      }
     } catch (error) {
       console.error('❌ Registration failed:', error)
-      setError(error.response?.data?.detail || error.message || 'Registration failed')
+      setError(error.response?.data?.message || error.message || 'Registration failed')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleTestRegistration = async () => {
+    try {
+      const testData = {
+        email: formData.email || 'test@example.com',
+        password: formData.password || 'testpass123',
+        full_name: formData.full_name || 'Test User'
+      }
+      
+      const response = await testRegistration(testData)
+      console.log('🔍 Test result:', response)
+      
+      if (response.status === 'success') {
+        setError(`✅ Test passed: ${response.message}`)
+      } else {
+        setError(`❌ Test failed: ${response.message}`)
+      }
+    } catch (error) {
+      console.error('Test error:', error)
+      setError(`❌ Test error: ${error.message}`)
     }
   }
 
@@ -132,13 +161,23 @@ function Register({ onSwitchToLogin }) {
           />
         </div>
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-gradient-to-r from-primary-500 to-secondary-500 text-white py-2 px-4 rounded-md hover:opacity-90 transition-opacity disabled:opacity-50"
-        >
-          {loading ? 'Creating account...' : 'Create Account'}
-        </button>
+        <div className="space-y-2">
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-gradient-to-r from-primary-500 to-secondary-500 text-white py-2 px-4 rounded-md hover:opacity-90 transition-opacity disabled:opacity-50"
+          >
+            {loading ? 'Creating account...' : 'Create Account'}
+          </button>
+          
+          <button
+            type="button"
+            onClick={handleTestRegistration}
+            className="w-full bg-gray-500 text-white py-1 px-4 rounded-md hover:bg-gray-600 transition-colors text-sm"
+          >
+            🔍 Test Backend Connection
+          </button>
+        </div>
       </form>
 
       <div className="mt-6">

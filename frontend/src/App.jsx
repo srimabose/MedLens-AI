@@ -44,10 +44,10 @@ function AppContent() {
     )
   }
 
-  // Temporarily allow guest access for testing
-  const showAuthScreen = false // Set to true to require authentication
+  // Show auth screen if user clicks login/signup in guest mode
+  const showAuthScreen = !isAuthenticated && (authMode === 'login' || authMode === 'register')
   
-  if (!isAuthenticated && showAuthScreen) {
+  if (showAuthScreen) {
     return (
       <div className="min-h-screen flex flex-col medical-pattern">
         <div className="flex-1 py-8 px-4">
@@ -56,6 +56,15 @@ function AppContent() {
             <p className="text-xl opacity-90">Your Medical Report Explainer & Health Assistant</p>
           </header>
 
+          <div className="mb-4 text-center">
+            <button
+              onClick={() => setAuthMode('guest')}
+              className="text-white/70 hover:text-white text-sm underline"
+            >
+              ← Continue as Guest
+            </button>
+          </div>
+          
           {authMode === 'login' ? (
             <Login onSwitchToRegister={() => setAuthMode('register')} />
           ) : (
@@ -134,11 +143,27 @@ function AppContent() {
               <p className="text-xl opacity-90">Your Medical Report Explainer & Health Assistant</p>
               
               {!isAuthenticated && (
-                <div className="mt-4 bg-yellow-500/20 backdrop-blur-md border border-yellow-400/30 rounded-lg p-3 max-w-md mx-auto">
-                  <p className="text-sm text-yellow-100">
-                    🔓 <strong>Guest Mode:</strong> You can test all AI features without creating an account. 
-                    Reports won't be saved to history.
-                  </p>
+                <div className="mt-4 space-y-3">
+                  <div className="bg-yellow-500/20 backdrop-blur-md border border-yellow-400/30 rounded-lg p-3 max-w-md mx-auto">
+                    <p className="text-sm text-yellow-100">
+                      🔓 <strong>Guest Mode:</strong> You can test all AI features without creating an account. 
+                      Reports won't be saved to history.
+                    </p>
+                  </div>
+                  <div className="flex justify-center gap-3">
+                    <button
+                      onClick={() => setAuthMode('login')}
+                      className="bg-white/10 backdrop-blur-md hover:bg-white/20 text-white px-4 py-2 rounded-lg transition-colors text-sm"
+                    >
+                      🔑 Login
+                    </button>
+                    <button
+                      onClick={() => setAuthMode('register')}
+                      className="bg-white/10 backdrop-blur-md hover:bg-white/20 text-white px-4 py-2 rounded-lg transition-colors text-sm"
+                    >
+                      📝 Sign Up
+                    </button>
+                  </div>
                 </div>
               )}
               

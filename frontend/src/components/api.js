@@ -93,3 +93,13 @@ export const deleteReport = async (reportId) => {
   const response = await api.delete(`/reports/${reportId}`)
   return response.data
 }
+
+export const testRegistration = async (userData) => {
+  const response = await api.post('/test-register', userData)
+  return response.data
+}
+
+export const simpleRegister = async (userData) => {
+  const response = await api.post('/simple-register', userData)
+  return response.data
+}

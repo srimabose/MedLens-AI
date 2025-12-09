@@ -76,16 +76,105 @@ async def test_register(data: dict):
     """Test endpoint to debug registration issues"""
     try:
         print(f"🔍 Test registration data received: {data}")
+        
+        # Test bcrypt import and hashing
+        from app.auth_utils import get_password_hash, verify_password
+        test_password = "testpassword123"
+        hashed = get_password_hash(test_password)
+        verified = verify_password(test_password, hashed)
+        
+        # Test database connection
+        from app.database import Database
+        db = Database.get_database()
+        test_collection = await db.list_collection_names()
+        
         return {
             "status": "success", 
             "received_data": data,
-            "message": "Test endpoint working"
+            "bcrypt_test": {
+                "hash_created": bool(hashed),
+                "verification": verified
+            },
+            "database_test": {
+                "connected": True,
+                "collections": len(test_collection)
+            },
+            "message": "All systems working"
         }
     except Exception as e:
         print(f"❌ Test registration error: {str(e)}")
         import traceback
         traceback.print_exc()
-        return {"status": "error", "message": str(e)}
+        return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
+
+
+@app.post("/simple-register")
+async def simple_register(data: dict):
+    """Simplified registration endpoint for debugging"""
+    try:
+        email = data.get("email")
+        password = data.get("password") 
+        full_name = data.get("full_name")
+        
+        print(f"🔄 Simple registration for: {email}")
+        
+        # Import required modules
+        from app.database import Database
+        from app.auth_utils import get_password_hash, create_access_token
+        from datetime import datetime, timedelta
+        
+        # Get database
+        db = Database.get_database()
+        
+        # Check if user exists
+        existing_user = await db.users.find_one({"email": email})
+        if existing_user:
+            return {"status": "error", "message": "User already exists"}
+        
+        # Hash password
+        password_hash = get_password_hash(password)
+        
+        # Create user document
+        user_doc = {
+            "email": email,
+            "full_name": full_name,
+            "password_hash": password_hash,
+            "provider": "email",
+            "is_active": True,
+            "created_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow()
+        }
+        
+        # Insert user
+        result = await db.users.insert_one(user_doc)
+        user_doc["_id"] = result.inserted_id
+        
+        # Create token
+        access_token = create_access_token(
+            data={"sub": email}, 
+            expires_delta=timedelta(minutes=30)
+        )
+        
+        print(f"✅ User created successfully: {email}")
+        
+        return {
+            "status": "success",
+            "access_token": access_token,
+            "token_type": "bearer",
+            "user": {
+                "id": str(user_doc["_id"]),
+                "email": email,
+                "full_name": full_name,
+                "provider": "email",
+                "is_active": True
+            }
+        }
+        
+    except Exception as e:
+        print(f"❌ Simple registration error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return {"status": "error", "message": str(e), "details": traceback.format_exc()}
 
 
 @app.post("/analyze-report")
