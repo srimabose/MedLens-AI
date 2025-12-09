@@ -1,9 +1,15 @@
 services:
-  # Backend API Service
+  # Unified Web Service (Backend + Frontend)
   - type: web
-    name: medlens-ai-backend
+    name: medlens-ai
     env: python
-    buildCommand: cd backend && pip install -r requirements.txt
+    buildCommand: |
+      # Install backend dependencies
+      cd backend && pip install -r requirements.txt
+      # Install frontend dependencies and build
+      cd ../frontend && npm install && npm run build
+      # Move frontend build to backend directory for serving
+      cp -r dist ../backend/
     startCommand: cd backend && python -m uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: GEMINI_API_KEY
@@ -14,11 +20,10 @@ services:
         value: medlens_ai
       - key: SECRET_KEY
         generateValue: true
+      - key: ENVIRONMENT
+        value: production
       - key: FRONTEND_URL
-        fromService:
-          type: web
-          name: medlens-ai-frontend
-          property: host
+        value: https://medlens-ai.onrender.com
       - key: GOOGLE_CLIENT_ID
         sync: false
       - key: GOOGLE_CLIENT_SECRET
@@ -27,16 +32,3 @@ services:
         sync: false
       - key: FACEBOOK_CLIENT_SECRET
         sync: false
-
-  # Frontend Service
-  - type: web
-    name: medlens-ai-frontend
-    env: node
-    buildCommand: cd frontend && npm install && npm run build
-    staticPublishPath: ./frontend/dist
-    envVars:
-      - key: VITE_API_URL
-        fromService:
-          type: web
-          name: medlens-ai-backend
-          property: host
