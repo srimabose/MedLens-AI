@@ -61,6 +61,33 @@ def root():
     return {"message": "MedLens AI API", "status": "running", "version": "1.0.0"}
 
 
+@app.get("/health")
+def health_check():
+    return {
+        "status": "healthy",
+        "timestamp": "2024-12-09",
+        "database": "connected",
+        "cors_origins": settings.CORS_ORIGINS
+    }
+
+
+@app.post("/test-register")
+async def test_register(data: dict):
+    """Test endpoint to debug registration issues"""
+    try:
+        print(f"🔍 Test registration data received: {data}")
+        return {
+            "status": "success", 
+            "received_data": data,
+            "message": "Test endpoint working"
+        }
+    except Exception as e:
+        print(f"❌ Test registration error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return {"status": "error", "message": str(e)}
+
+
 @app.post("/analyze-report")
 async def analyze_report(
     file: UploadFile = File(...),
@@ -98,6 +125,42 @@ async def analyze_report(
     except Exception as e:
         error_msg = str(e)
         print(f"Error analyzing report: {error_msg}")
+        
+        # Handle rate limit errors
+        if "429" in error_msg or "quota" in error_msg.lower() or "rate limit" in error_msg.lower():
+            raise HTTPException(
+                status_code=429,
+                detail="API rate limit exceeded. Please wait a moment and try again. The free tier has a limit of 20 requests per day."
+            )
+        
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=error_msg)
+
+
+@app.post("/analyze-report-no-auth")
+async def analyze_report_no_auth(
+    file: UploadFile = File(...),
+    language: str = Form("en")
+):
+    """Analyze uploaded medical report without authentication (for testing)"""
+    try:
+        content = await file.read()
+        file_type = file.content_type
+        file_size = len(content)
+        
+        print(f"Analyzing file (no auth): {file.filename}, type: {file_type}, size: {file_size} bytes, language: {language}")
+        
+        # Analyze with Gemini
+        result = await gemini_client.analyze_medical_report(content, file_type, language)
+        
+        print(f"✅ Analysis completed successfully")
+        
+        # Return result without saving to database
+        return result
+    except Exception as e:
+        error_msg = str(e)
+        print(f"Error analyzing report (no auth): {error_msg}")
         
         # Handle rate limit errors
         if "429" in error_msg or "quota" in error_msg.lower() or "rate limit" in error_msg.lower():
