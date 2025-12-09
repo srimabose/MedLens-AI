@@ -7,12 +7,13 @@ class Settings:
     MONGODB_URL: str = os.getenv("MONGODB_URL", "")
     DATABASE_NAME: str = os.getenv("DATABASE_NAME", "medlens_ai")
     
-    # CORS Origins - include production URLs
+    # CORS Origins - for separate frontend deployment
     CORS_ORIGINS: List[str] = [
         "http://localhost:5173",
         "http://localhost:3000",
         "http://localhost:5174",
         "https://*.onrender.com",
+        "https://medlens-ai-frontend.onrender.com",
         os.getenv("FRONTEND_URL", "http://localhost:5173")
     ]
     
