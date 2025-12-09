@@ -1,6 +1,6 @@
 import LanguageSelector, { LANGUAGES } from './LanguageSelector'
 import { useState } from 'react'
-import { translateReport } from '../lib/api.js'
+import { translateReport } from '../lib'
 import Loader from './Loader'
 
 function ResultView({ result, filename, onStartChat, onBackToUpload, initialLanguage = 'en' }) {
