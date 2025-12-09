@@ -14,6 +14,7 @@ class Settings:
         "http://localhost:5174",
         "https://*.onrender.com",
         "https://medlens-ai-frontend.onrender.com",
+        "https://medlens-ai-y2x2.onrender.com",
         os.getenv("FRONTEND_URL", "http://localhost:5173")
     ]
     
