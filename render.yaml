@@ -1,0 +1,42 @@
+services:
+  # Backend API Service
+  - type: web
+    name: medlens-ai-backend
+    env: python
+    buildCommand: cd backend && pip install -r requirements.txt
+    startCommand: cd backend && python -m uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: MONGODB_URL
+        sync: false
+      - key: DATABASE_NAME
+        value: medlens_ai
+      - key: SECRET_KEY
+        generateValue: true
+      - key: FRONTEND_URL
+        fromService:
+          type: web
+          name: medlens-ai-frontend
+          property: host
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: FACEBOOK_CLIENT_ID
+        sync: false
+      - key: FACEBOOK_CLIENT_SECRET
+        sync: false
+
+  # Frontend Service
+  - type: web
+    name: medlens-ai-frontend
+    env: node
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: ./frontend/dist
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: medlens-ai-backend
+          property: host

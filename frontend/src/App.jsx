@@ -1,0 +1,207 @@
+import { useState } from 'react'
+import { AuthProvider, useAuth } from './contexts/AuthContext'
+import UploadPanel from './components/UploadPanel'
+import ResultView from './components/ResultView'
+import ChatPanel from './components/ChatPanel'
+import Sidebar, { saveToHistory } from './components/Sidebar'
+import HealthTrends from './pages/HealthTrends'
+import MedicationChecker from './pages/MedicationChecker'
+import DietPlanner from './pages/DietPlanner'
+import SymptomChecker from './pages/SymptomChecker'
+import Login from './components/Login'
+import Register from './components/Register'
+import OAuthCallback from './components/OAuthCallback'
+import Loader from './components/Loader'
+import Footer from './components/Footer'
+
+function AppContent() {
+  const [currentPage, setCurrentPage] = useState('upload')
+  const [analysisResult, setAnalysisResult] = useState(null)
+  const [currentFilename, setCurrentFilename] = useState('')
+  const [currentLanguage, setCurrentLanguage] = useState('en')
+  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [authMode, setAuthMode] = useState('login') // 'login' or 'register'
+  const { user, loading, isAuthenticated } = useAuth()
+
+  // Handle OAuth callbacks
+  const urlParams = new URLSearchParams(window.location.search)
+  const isGoogleCallback = window.location.pathname === '/auth/google/callback'
+  const isFacebookCallback = window.location.pathname === '/auth/facebook/callback'
+
+  if (isGoogleCallback) {
+    return <OAuthCallback provider="google" />
+  }
+
+  if (isFacebookCallback) {
+    return <OAuthCallback provider="facebook" />
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center medical-pattern">
+        <Loader message="Loading..." />
+      </div>
+    )
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen flex flex-col medical-pattern">
+        <div className="flex-1 py-8 px-4">
+          <header className="text-center text-white mb-12">
+            <h1 className="text-5xl font-bold mb-3 drop-shadow-lg">🏥 MedLens AI</h1>
+            <p className="text-xl opacity-90">Your Medical Report Explainer & Health Assistant</p>
+          </header>
+
+          {authMode === 'login' ? (
+            <Login onSwitchToRegister={() => setAuthMode('register')} />
+          ) : (
+            <Register onSwitchToLogin={() => setAuthMode('login')} />
+          )}
+        </div>
+        <Footer />
+      </div>
+    )
+  }
+
+  const handleAnalysisComplete = (result, filename, language = 'en') => {
+    setAnalysisResult(result)
+    setCurrentFilename(filename)
+    setCurrentLanguage(language)
+    setCurrentPage('results')
+    
+    // Save to history
+    saveToHistory(filename, result)
+  }
+
+  const handleStartChat = () => {
+    setCurrentPage('chat')
+  }
+
+  const handleBackToUpload = () => {
+    setCurrentPage('upload')
+    setAnalysisResult(null)
+    setCurrentFilename('')
+  }
+
+  const handleNewChat = () => {
+    setCurrentPage('upload')
+    setAnalysisResult(null)
+    setCurrentFilename('')
+  }
+
+  const handleSelectHistory = (item) => {
+    if (item.result?.type === 'health_trends' || item.type === 'health_trends') {
+      // Handle trends analysis
+      setCurrentPage('trends')
+      // You could set the trends result in HealthTrends component if needed
+    } else {
+      // Handle regular medical report
+      setAnalysisResult(item.result)
+      setCurrentFilename(item.filename)
+      setCurrentPage('results')
+    }
+  }
+
+  // Authenticated user interface
+  return (
+    <div className="flex min-h-screen flex-col">
+      <div className="flex flex-1">
+        <Sidebar 
+          onSelectHistory={handleSelectHistory}
+          onNewChat={handleNewChat}
+          currentPage={currentPage}
+          isOpen={sidebarOpen}
+          setIsOpen={setSidebarOpen}
+        />
+        
+        <div className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'lg:ml-72' : 'lg:ml-0'} flex flex-col`}>
+          <div className="flex-1 py-8 px-4 medical-pattern">
+            {/* Header with Home Button and Feature Navigation */}
+            <header className="text-center text-white mb-12 relative">
+              {currentPage !== 'upload' && (
+                <button
+                  onClick={handleBackToUpload}
+                  className="absolute left-0 top-16 z-10 bg-white/10 backdrop-blur-md hover:bg-white/20 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2 shadow-lg"
+                >
+                  <span>←</span> Home
+                </button>
+              )}
+              <h1 className="text-5xl font-bold mb-3 drop-shadow-lg">🏥 MedLens AI</h1>
+              <p className="text-xl opacity-90">Your Medical Report Explainer & Health Assistant</p>
+              
+              {/* Feature Navigation */}
+              {currentPage === 'upload' && (
+                <div className="mt-8 flex flex-wrap justify-center gap-4">
+                  <button
+                    onClick={() => setCurrentPage('trends')}
+                    className="bg-white/10 backdrop-blur-md hover:bg-white/20 text-white px-6 py-3 rounded-lg transition-colors flex items-center gap-2"
+                  >
+                    📈 Health Trends
+                  </button>
+                  <button
+                    onClick={() => setCurrentPage('medication')}
+                    className="bg-white/10 backdrop-blur-md hover:bg-white/20 text-white px-6 py-3 rounded-lg transition-colors flex items-center gap-2"
+                  >
+                    💊 Medication Checker
+                  </button>
+                  <button
+                    onClick={() => setCurrentPage('diet')}
+                    className="bg-white/10 backdrop-blur-md hover:bg-white/20 text-white px-6 py-3 rounded-lg transition-colors flex items-center gap-2"
+                  >
+                    🥗 Diet Planner
+                  </button>
+                  <button
+                    onClick={() => setCurrentPage('symptoms')}
+                    className="bg-white/10 backdrop-blur-md hover:bg-white/20 text-white px-6 py-3 rounded-lg transition-colors flex items-center gap-2"
+                  >
+                    🩺 Symptom Checker
+                  </button>
+                </div>
+              )}
+            </header>
+
+            {currentPage === 'upload' && (
+              <UploadPanel onAnalysisComplete={handleAnalysisComplete} />
+            )}
+
+            {currentPage === 'results' && (
+              <ResultView 
+                result={analysisResult}
+                filename={currentFilename}
+                initialLanguage={currentLanguage}
+                onStartChat={handleStartChat}
+                onBackToUpload={handleBackToUpload}
+              />
+            )}
+
+            {currentPage === 'chat' && (
+              <ChatPanel 
+                context={analysisResult}
+                initialLanguage={currentLanguage}
+                onBack={() => setCurrentPage('results')}
+                onHome={handleBackToUpload}
+              />
+            )}
+
+            {currentPage === 'trends' && <HealthTrends onNavigate={setCurrentPage} />}
+            {currentPage === 'medication' && <MedicationChecker onNavigate={setCurrentPage} />}
+            {currentPage === 'diet' && <DietPlanner onNavigate={setCurrentPage} />}
+            {currentPage === 'symptoms' && <SymptomChecker onNavigate={setCurrentPage} />}
+          </div>
+          <Footer />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
+  )
+}
+
+export default App
