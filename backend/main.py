@@ -62,11 +62,15 @@ def root():
 
 
 @app.get("/health")
-def health_check():
+async def health_check():
+    # Test MongoDB connection
+    db_status = await Database.test_connection()
+    
     return {
         "status": "healthy",
         "timestamp": "2024-12-09",
-        "database": "connected",
+        "database": db_status["status"],
+        "database_details": db_status,
         "cors_origins": settings.CORS_ORIGINS
     }
 
