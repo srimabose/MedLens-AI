@@ -16,29 +16,61 @@ class Database:
             if not mongodb_url:
                 raise ValueError("MONGODB_URL not found in environment variables")
             
-            # Force MongoDB connection - no fallbacks for centralized database
             print(f"🔄 Connecting to MongoDB Atlas for centralized user database...")
             
-            # Use the most compatible connection method for Render
-            cls.client = AsyncIOMotorClient(
-                mongodb_url,
-                # Disable SSL verification for Render compatibility
-                tls=True,
-                tlsAllowInvalidCertificates=True,
-                tlsAllowInvalidHostnames=True,
-                # Increase timeouts for Render's network
-                serverSelectionTimeoutMS=60000,
-                connectTimeoutMS=60000,
-                socketTimeoutMS=60000,
-                # Connection pool settings
-                maxPoolSize=10,
-                minPoolSize=1,
-                # Write concern
-                retryWrites=True,
-                w='majority'
-            )
+            # Try multiple connection approaches
+            connection_attempts = [
+                {
+                    "name": "Standard MongoDB Atlas",
+                    "url": mongodb_url,
+                    "options": {
+                        "serverSelectionTimeoutMS": 5000,
+                        "connectTimeoutMS": 5000,
+                        "socketTimeoutMS": 5000,
+                        "maxPoolSize": 10,
+                        "minPoolSize": 1
+                    }
+                },
+                {
+                    "name": "With explicit TLS",
+                    "url": mongodb_url.replace("ssl=true", "tls=true"),
+                    "options": {
+                        "tls": True,
+                        "serverSelectionTimeoutMS": 5000,
+                        "connectTimeoutMS": 5000,
+                        "socketTimeoutMS": 5000,
+                        "maxPoolSize": 5,
+                        "minPoolSize": 1
+                    }
+                },
+                {
+                    "name": "Relaxed SSL",
+                    "url": mongodb_url,
+                    "options": {
+                        "tls": True,
+                        "tlsAllowInvalidCertificates": True,
+                        "tlsAllowInvalidHostnames": True,
+                        "serverSelectionTimeoutMS": 5000,
+                        "connectTimeoutMS": 5000,
+                        "socketTimeoutMS": 5000,
+                        "maxPoolSize": 5,
+                        "minPoolSize": 1
+                    }
+                }
+            ]
             
-            print(f"✅ MongoDB client created, will test on first use")
+            for attempt in connection_attempts:
+                try:
+                    print(f"🔄 Trying {attempt['name']}...")
+                    cls.client = AsyncIOMotorClient(attempt["url"], **attempt["options"])
+                    print(f"✅ MongoDB client created with {attempt['name']}")
+                    break
+                except Exception as e:
+                    print(f"❌ {attempt['name']} failed: {str(e)[:100]}...")
+                    continue
+            
+            if cls.client is None:
+                raise Exception("All MongoDB connection attempts failed")
                 
         return cls.client
     
@@ -56,15 +88,17 @@ class Database:
     
     @classmethod
     async def test_connection(cls):
-        """Test database connection"""
+        """Test database connection with timeout"""
         try:
             client = cls.get_client()
-            # Test connection by pinging the database
-            await client.admin.command('ping')
+            
+            # Test connection with shorter timeout
+            import asyncio
+            await asyncio.wait_for(client.admin.command('ping'), timeout=10.0)
             
             # Test database access
             db = cls.get_database()
-            collections = await db.list_collection_names()
+            collections = await asyncio.wait_for(db.list_collection_names(), timeout=10.0)
             
             return {
                 "status": "success",
@@ -72,10 +106,16 @@ class Database:
                 "collections_count": len(collections),
                 "collections": collections[:5]  # Show first 5 collections
             }
+        except asyncio.TimeoutError:
+            return {
+                "status": "error", 
+                "message": "Database connection timeout (10 seconds)",
+                "error_type": "TimeoutError"
+            }
         except Exception as e:
             return {
                 "status": "error", 
-                "message": f"Database connection failed: {str(e)}",
+                "message": f"Database connection failed: {str(e)[:200]}...",
                 "error_type": type(e).__name__
             }
 
