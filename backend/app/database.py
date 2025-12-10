@@ -17,28 +17,32 @@ class Database:
                 raise ValueError("MONGODB_URL not found in environment variables")
             
             try:
-                # First try with SSL context for MongoDB Atlas
-                ssl_context = ssl.create_default_context()
-                ssl_context.check_hostname = False
-                ssl_context.verify_mode = ssl.CERT_NONE
-                
-                # Connection options for Render deployment
-                connection_options = {
-                    'ssl_context': ssl_context,
-                    'serverSelectionTimeoutMS': 30000,
-                    'connectTimeoutMS': 30000,
-                    'socketTimeoutMS': 30000,
-                    'maxPoolSize': 10,
-                    'retryWrites': True,
-                    'w': 'majority'
-                }
-                
-                cls.client = AsyncIOMotorClient(mongodb_url, **connection_options)
+                # Try simple connection first (often works better on Render)
+                cls.client = AsyncIOMotorClient(
+                    mongodb_url,
+                    serverSelectionTimeoutMS=5000,
+                    connectTimeoutMS=5000,
+                    socketTimeoutMS=5000
+                )
                 
             except Exception as e:
-                print(f"⚠️ SSL context connection failed, trying simple connection: {e}")
-                # Fallback to simple connection
-                cls.client = AsyncIOMotorClient(mongodb_url)
+                print(f"⚠️ Simple connection failed, trying with SSL context: {e}")
+                try:
+                    # Fallback with SSL context
+                    ssl_context = ssl.create_default_context()
+                    ssl_context.check_hostname = False
+                    ssl_context.verify_mode = ssl.CERT_NONE
+                    
+                    cls.client = AsyncIOMotorClient(
+                        mongodb_url,
+                        ssl_context=ssl_context,
+                        serverSelectionTimeoutMS=10000,
+                        connectTimeoutMS=10000,
+                        socketTimeoutMS=10000
+                    )
+                except Exception as e2:
+                    print(f"❌ Both connection methods failed: {e2}")
+                    cls.client = None
                 
         return cls.client
     
