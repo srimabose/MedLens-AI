@@ -1,7 +1,5 @@
 import { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
-import { authAPI } from './auth.js'
-import { fileRegister } from './api.js'
 
 function Register({ onSwitchToLogin }) {
   const [formData, setFormData] = useState({
@@ -28,22 +26,32 @@ function Register({ onSwitchToLogin }) {
     console.log('🔄 Starting registration for:', formData.email)
 
     try {
-      // Try file-based registration (no database required)
-      const response = await fileRegister({
-        email: formData.email,
-        password: formData.password,
-        full_name: formData.full_name
+      const API_URL = import.meta.env.VITE_API_URL || 'https://medlens-ai-aah4.onrender.com'
+      
+      // Use MongoDB-only registration endpoint
+      const response = await fetch(`${API_URL}/mongodb-register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+          full_name: formData.full_name
+        })
       })
       
-      if (response.status === 'success') {
-        console.log('✅ Registration successful:', response)
-        login(response.user, response.access_token)
+      const data = await response.json()
+      
+      if (data.status === 'success') {
+        console.log('✅ Registration successful:', data)
+        login(data.user, data.access_token)
       } else {
-        throw new Error(response.message || 'Registration failed')
+        throw new Error(data.message || 'Registration failed')
       }
     } catch (error) {
       console.error('❌ Registration failed:', error)
-      setError(error.response?.data?.message || error.message || 'Registration failed')
+      setError(error.message || 'Registration failed. Please check your connection and try again.')
     } finally {
       setLoading(false)
     }
@@ -53,8 +61,8 @@ function Register({ onSwitchToLogin }) {
 
   const handleGoogleLogin = async () => {
     try {
-      const authUrl = await authAPI.getGoogleAuthUrl()
-      window.location.href = authUrl
+      const API_URL = import.meta.env.VITE_API_URL || 'https://medlens-ai-aah4.onrender.com'
+      window.location.href = `${API_URL}/auth/google`
     } catch (error) {
       setError('Failed to initiate Google login')
     }
@@ -62,8 +70,8 @@ function Register({ onSwitchToLogin }) {
 
   const handleFacebookLogin = async () => {
     try {
-      const authUrl = await authAPI.getFacebookAuthUrl()
-      window.location.href = authUrl
+      const API_URL = import.meta.env.VITE_API_URL || 'https://medlens-ai-aah4.onrender.com'
+      window.location.href = `${API_URL}/auth/facebook`
     } catch (error) {
       setError('Failed to initiate Facebook login')
     }

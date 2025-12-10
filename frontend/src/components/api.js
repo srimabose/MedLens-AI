@@ -1,7 +1,7 @@
 import axios from 'axios'
 import Cookies from 'js-cookie'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+const API_URL = import.meta.env.VITE_API_URL || 'https://medlens-ai-aah4.onrender.com'
 
 export const api = axios.create({
   baseURL: API_URL,
@@ -104,12 +104,12 @@ export const simpleRegister = async (userData) => {
   return response.data
 }
 
-export const fileRegister = async (userData) => {
-  const response = await api.post('/file-register', userData)
+export const mongodbRegister = async (userData) => {
+  const response = await api.post('/mongodb-register', userData)
   return response.data
 }
 
-export const fileLogin = async (userData) => {
-  const response = await api.post('/file-login', userData)
+export const mongodbLogin = async (userData) => {
+  const response = await api.post('/mongodb-login', userData)
   return response.data
 }

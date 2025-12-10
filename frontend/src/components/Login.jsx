@@ -1,7 +1,5 @@
 import { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
-import { authAPI } from './auth.js'
-import { fileLogin } from './api.js'
 
 function Login({ onSwitchToRegister }) {
   const [formData, setFormData] = useState({
@@ -18,16 +16,27 @@ function Login({ onSwitchToRegister }) {
     setError('')
 
     try {
-      // Try file-based login (no database required)
-      const response = await fileLogin(formData)
+      const API_URL = import.meta.env.VITE_API_URL || 'https://medlens-ai-aah4.onrender.com'
       
-      if (response.status === 'success') {
-        login(response.user, response.access_token)
+      // Use MongoDB-only login endpoint
+      const response = await fetch(`${API_URL}/mongodb-login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+      })
+      
+      const data = await response.json()
+      
+      if (data.status === 'success') {
+        login(data.user, data.access_token)
       } else {
-        throw new Error(response.message || 'Login failed')
+        throw new Error(data.message || 'Login failed')
       }
     } catch (error) {
-      setError(error.response?.data?.message || error.message || 'Login failed')
+      console.error('Login error:', error)
+      setError(error.message || 'Login failed. Please check your connection and try again.')
     } finally {
       setLoading(false)
     }
@@ -35,8 +44,8 @@ function Login({ onSwitchToRegister }) {
 
   const handleGoogleLogin = async () => {
     try {
-      const authUrl = await authAPI.getGoogleAuthUrl()
-      window.location.href = authUrl
+      const API_URL = import.meta.env.VITE_API_URL || 'https://medlens-ai-aah4.onrender.com'
+      window.location.href = `${API_URL}/auth/google`
     } catch (error) {
       setError('Failed to initiate Google login')
     }
@@ -44,8 +53,8 @@ function Login({ onSwitchToRegister }) {
 
   const handleFacebookLogin = async () => {
     try {
-      const authUrl = await authAPI.getFacebookAuthUrl()
-      window.location.href = authUrl
+      const API_URL = import.meta.env.VITE_API_URL || 'https://medlens-ai-aah4.onrender.com'
+      window.location.href = `${API_URL}/auth/facebook`
     } catch (error) {
       setError('Failed to initiate Facebook login')
     }

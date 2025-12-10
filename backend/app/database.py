@@ -16,33 +16,29 @@ class Database:
             if not mongodb_url:
                 raise ValueError("MONGODB_URL not found in environment variables")
             
-            try:
-                # Try simple connection first (often works better on Render)
-                cls.client = AsyncIOMotorClient(
-                    mongodb_url,
-                    serverSelectionTimeoutMS=5000,
-                    connectTimeoutMS=5000,
-                    socketTimeoutMS=5000
-                )
-                
-            except Exception as e:
-                print(f"⚠️ Simple connection failed, trying with SSL context: {e}")
-                try:
-                    # Fallback with SSL context
-                    ssl_context = ssl.create_default_context()
-                    ssl_context.check_hostname = False
-                    ssl_context.verify_mode = ssl.CERT_NONE
-                    
-                    cls.client = AsyncIOMotorClient(
-                        mongodb_url,
-                        ssl_context=ssl_context,
-                        serverSelectionTimeoutMS=10000,
-                        connectTimeoutMS=10000,
-                        socketTimeoutMS=10000
-                    )
-                except Exception as e2:
-                    print(f"❌ Both connection methods failed: {e2}")
-                    cls.client = None
+            # Force MongoDB connection - no fallbacks for centralized database
+            print(f"🔄 Connecting to MongoDB Atlas for centralized user database...")
+            
+            # Use the most compatible connection method for Render
+            cls.client = AsyncIOMotorClient(
+                mongodb_url,
+                # Disable SSL verification for Render compatibility
+                tls=True,
+                tlsAllowInvalidCertificates=True,
+                tlsAllowInvalidHostnames=True,
+                # Increase timeouts for Render's network
+                serverSelectionTimeoutMS=60000,
+                connectTimeoutMS=60000,
+                socketTimeoutMS=60000,
+                # Connection pool settings
+                maxPoolSize=10,
+                minPoolSize=1,
+                # Write concern
+                retryWrites=True,
+                w='majority'
+            )
+            
+            print(f"✅ MongoDB client created, will test on first use")
                 
         return cls.client
     

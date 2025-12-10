@@ -173,98 +173,98 @@ async def simple_register(data: dict):
         return {"status": "error", "message": str(e), "details": traceback.format_exc()}
 
 
-@app.post("/file-register")
-async def file_register(data: dict):
-    """Persistent registration (MongoDB preferred, file fallback)"""
+@app.post("/mongodb-register")
+async def mongodb_register(data: dict):
+    """MongoDB-only registration (centralized database)"""
     try:
         email = data.get("email")
         password = data.get("password") 
         full_name = data.get("full_name")
         
-        print(f"🔄 Persistent registration for: {email}")
+        print(f"🔄 MongoDB registration for: {email}")
         
-        # Import persistent auth
-        from app.persistent_auth import create_persistent_user
+        # Import MongoDB auth
+        from app.mongodb_auth import create_mongodb_user
         from app.auth_utils import create_access_token
         from datetime import timedelta
         
-        # Create user with persistent storage (MongoDB preferred)
-        user = await create_persistent_user(email, password, full_name)
+        # Create user in MongoDB Atlas (centralized)
+        user = await create_mongodb_user(email, password, full_name)
         
         # Create token
         access_token = create_access_token(
             data={"sub": email}, 
-            expires_delta=timedelta(minutes=30)
+            expires_delta=timedelta(minutes=1440)  # 24 hours
         )
         
-        print(f"✅ Persistent user created successfully: {email}")
+        print(f"✅ MongoDB user created successfully: {email}")
         
         return {
             "status": "success",
             "access_token": access_token,
             "token_type": "bearer",
             "user": {
-                "id": str(user.get("_id", user.get("id", "unknown"))),
+                "id": str(user["_id"]),
                 "email": email,
                 "full_name": full_name,
                 "provider": "email",
                 "is_active": True
             },
-            "message": "Account created successfully"
+            "message": "Account created in centralized database"
         }
         
     except ValueError as e:
         return {"status": "error", "message": str(e)}
     except Exception as e:
-        print(f"❌ Persistent registration error: {str(e)}")
+        print(f"❌ MongoDB registration error: {str(e)}")
         import traceback
         traceback.print_exc()
         return {"status": "error", "message": str(e), "details": traceback.format_exc()}
 
 
-@app.post("/file-login")
-async def file_login(data: dict):
-    """Persistent login (MongoDB preferred, file fallback)"""
+@app.post("/mongodb-login")
+async def mongodb_login(data: dict):
+    """MongoDB-only login (centralized database)"""
     try:
         email = data.get("email")
         password = data.get("password")
         
-        print(f"🔄 Persistent login for: {email}")
+        print(f"🔄 MongoDB login for: {email}")
         
-        # Import persistent auth
-        from app.persistent_auth import authenticate_persistent_user
+        # Import MongoDB auth
+        from app.mongodb_auth import authenticate_mongodb_user
         from app.auth_utils import create_access_token
         from datetime import timedelta
         
-        # Authenticate user from persistent storage
-        user = await authenticate_persistent_user(email, password)
+        # Authenticate user from MongoDB Atlas
+        user = await authenticate_mongodb_user(email, password)
         if not user:
             return {"status": "error", "message": "Invalid email or password"}
         
         # Create token
         access_token = create_access_token(
             data={"sub": email}, 
-            expires_delta=timedelta(minutes=30)
+            expires_delta=timedelta(minutes=1440)  # 24 hours
         )
         
-        print(f"✅ Persistent login successful: {email}")
+        print(f"✅ MongoDB login successful: {email}")
         
         return {
             "status": "success",
             "access_token": access_token,
             "token_type": "bearer",
             "user": {
-                "id": str(user.get("_id", user.get("id", "unknown"))),
+                "id": str(user["_id"]),
                 "email": email,
                 "full_name": user["full_name"],
                 "provider": "email",
                 "is_active": True
             },
-            "message": "Login successful"
+            "message": "Login successful from centralized database"
         }
         
     except Exception as e:
-        print(f"❌ Persistent login error: {str(e)}")
+        print(f"❌ MongoDB login error: {str(e)}")
         import traceback
         traceback.print_exc()
         return {"status": "error", "message": str(e), "details": traceback.format_exc()}

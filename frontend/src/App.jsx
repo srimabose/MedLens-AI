@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import UploadPanel from './components/UploadPanel'
 import ResultView from './components/ResultView'
@@ -21,7 +21,29 @@ function AppContent() {
   const [currentLanguage, setCurrentLanguage] = useState('en')
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [authMode, setAuthMode] = useState('login') // 'login' or 'register'
+  const [apiStatus, setApiStatus] = useState('checking') // 'checking', 'connected', 'error'
   const { user, loading, isAuthenticated } = useAuth()
+
+  // Check API connection on mount
+  useEffect(() => {
+    const checkAPI = async () => {
+      try {
+        const API_URL = import.meta.env.VITE_API_URL || 'https://medlens-ai-aah4.onrender.com'
+        const response = await fetch(`${API_URL}/health`)
+        if (response.ok) {
+          setApiStatus('connected')
+          console.log('✅ API connection successful')
+        } else {
+          setApiStatus('error')
+          console.error('❌ API health check failed:', response.status)
+        }
+      } catch (error) {
+        setApiStatus('error')
+        console.error('❌ API connection failed:', error)
+      }
+    }
+    checkAPI()
+  }, [])
 
   // Handle OAuth callbacks
   const urlParams = new URLSearchParams(window.location.search)
@@ -142,7 +164,25 @@ function AppContent() {
               <h1 className="text-5xl font-bold mb-3 drop-shadow-lg">🏥 MedLens AI</h1>
               <p className="text-xl opacity-90">Your Medical Report Explainer & Health Assistant</p>
               
-              {!isAuthenticated && (
+              {/* API Status Indicator */}
+              {apiStatus === 'error' && (
+                <div className="mt-4 bg-red-500/20 backdrop-blur-md border border-red-400/30 rounded-lg p-3 max-w-md mx-auto">
+                  <p className="text-sm text-red-100">
+                    ⚠️ <strong>Connection Issue:</strong> Unable to connect to backend API. 
+                    Please check your internet connection.
+                  </p>
+                </div>
+              )}
+              
+              {apiStatus === 'checking' && (
+                <div className="mt-4 bg-blue-500/20 backdrop-blur-md border border-blue-400/30 rounded-lg p-3 max-w-md mx-auto">
+                  <p className="text-sm text-blue-100">
+                    🔄 <strong>Connecting:</strong> Checking backend API connection...
+                  </p>
+                </div>
+              )}
+
+              {!isAuthenticated && apiStatus === 'connected' && (
                 <div className="mt-4 space-y-3">
                   <div className="bg-yellow-500/20 backdrop-blur-md border border-yellow-400/30 rounded-lg p-3 max-w-md mx-auto">
                     <p className="text-sm text-yellow-100">
