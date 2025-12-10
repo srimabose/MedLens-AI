@@ -7,8 +7,7 @@ Transform complex medical reports into patient-friendly insights using Google Ge
 
 ## 🌟 Live Demo
 
-🚀 **[Try MedLens AI Live](https://medlens-ai.onrender.com)** *(Deploy your own using the guide below)*
-
+🚀 **[Try MedLens AI Live](https://medlens-ai-y2x2.onrender.com/)**
 📂 **[GitHub Repository](https://github.com/srimabose/MedLens-AI)**
 
 
