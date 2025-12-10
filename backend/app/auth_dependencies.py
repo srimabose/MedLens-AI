@@ -2,7 +2,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from typing import Optional
 from app.auth_utils import verify_token
-from app.persistent_auth import get_persistent_user_by_email
+from app.atlas_auth import get_user
 
 security = HTTPBearer(auto_error=False)
 
@@ -15,8 +15,8 @@ async def get_current_user(credentials: Optional[HTTPAuthorizationCredentials] =
     if not email:
         return None
     
-    # Use persistent authentication system
-    user = await get_persistent_user_by_email(email)
+    # Use Atlas authentication system
+    user = await get_user(email)
     return user
 
 async def get_current_user_required(credentials: HTTPAuthorizationCredentials = Depends(security)):
@@ -36,8 +36,8 @@ async def get_current_user_required(credentials: HTTPAuthorizationCredentials = 
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    # Use persistent authentication system
-    user = await get_persistent_user_by_email(email)
+    # Use Atlas authentication system
+    user = await get_user(email)
     
     if not user:
         raise HTTPException(
