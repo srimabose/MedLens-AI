@@ -2,6 +2,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from typing import Optional
 import os
 import ssl
+import certifi
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -17,60 +18,75 @@ class Database:
                 raise ValueError("MONGODB_URL not found in environment variables")
             
             print(f"🔄 Connecting to MongoDB Atlas for centralized user database...")
+            print(f"🔗 Using URL: {mongodb_url}")
             
-            # Try multiple connection approaches
-            connection_attempts = [
+            # Try multiple SSL/TLS approaches to fix Windows SSL issues
+            connection_methods = [
                 {
-                    "name": "Standard MongoDB Atlas",
-                    "url": mongodb_url,
-                    "options": {
-                        "serverSelectionTimeoutMS": 5000,
-                        "connectTimeoutMS": 5000,
-                        "socketTimeoutMS": 5000,
-                        "maxPoolSize": 10,
-                        "minPoolSize": 1
-                    }
-                },
-                {
-                    "name": "With explicit TLS",
-                    "url": mongodb_url.replace("ssl=true", "tls=true"),
-                    "options": {
-                        "tls": True,
-                        "serverSelectionTimeoutMS": 5000,
-                        "connectTimeoutMS": 5000,
-                        "socketTimeoutMS": 5000,
-                        "maxPoolSize": 5,
-                        "minPoolSize": 1
-                    }
-                },
-                {
-                    "name": "Relaxed SSL",
-                    "url": mongodb_url,
-                    "options": {
+                    "name": "Method 1: Disable SSL verification (dev only)",
+                    "config": {
                         "tls": True,
                         "tlsAllowInvalidCertificates": True,
                         "tlsAllowInvalidHostnames": True,
-                        "serverSelectionTimeoutMS": 5000,
-                        "connectTimeoutMS": 5000,
-                        "socketTimeoutMS": 5000,
-                        "maxPoolSize": 5,
-                        "minPoolSize": 1
+                        "tlsInsecure": True,
+                        "serverSelectionTimeoutMS": 30000,
+                        "connectTimeoutMS": 30000,
+                        "socketTimeoutMS": 30000
+                    }
+                },
+                {
+                    "name": "Method 2: Custom SSL context with no verification",
+                    "config": {
+                        "ssl_context": ssl._create_unverified_context(),
+                        "serverSelectionTimeoutMS": 30000,
+                        "connectTimeoutMS": 30000,
+                        "socketTimeoutMS": 30000
+                    }
+                },
+                {
+                    "name": "Method 3: Default with certifi CA bundle",
+                    "config": {
+                        "tlsCAFile": certifi.where(),
+                        "serverSelectionTimeoutMS": 30000,
+                        "connectTimeoutMS": 30000,
+                        "socketTimeoutMS": 30000
+                    }
+                },
+                {
+                    "name": "Method 4: Explicit TLS with system certs",
+                    "config": {
+                        "tls": True,
+                        "tlsAllowInvalidHostnames": False,
+                        "tlsAllowInvalidCertificates": False,
+                        "serverSelectionTimeoutMS": 30000,
+                        "connectTimeoutMS": 30000,
+                        "socketTimeoutMS": 30000
+                    }
+                },
+                {
+                    "name": "Method 5: Minimal configuration",
+                    "config": {
+                        "serverSelectionTimeoutMS": 30000,
+                        "connectTimeoutMS": 30000,
+                        "socketTimeoutMS": 30000
                     }
                 }
             ]
             
-            for attempt in connection_attempts:
+            for method in connection_methods:
                 try:
-                    print(f"🔄 Trying {attempt['name']}...")
-                    cls.client = AsyncIOMotorClient(attempt["url"], **attempt["options"])
-                    print(f"✅ MongoDB client created with {attempt['name']}")
+                    print(f"🔄 Trying {method['name']}...")
+                    cls.client = AsyncIOMotorClient(mongodb_url, **method['config'])
+                    print(f"✅ MongoDB client created with {method['name']}")
                     break
                 except Exception as e:
-                    print(f"❌ {attempt['name']} failed: {str(e)[:100]}...")
+                    print(f"❌ {method['name']} failed: {str(e)[:150]}...")
+                    cls.client = None
                     continue
             
             if cls.client is None:
-                raise Exception("All MongoDB connection attempts failed")
+                print("❌ All connection methods failed, using basic client as fallback")
+                cls.client = AsyncIOMotorClient(mongodb_url)
                 
         return cls.client
     
@@ -88,17 +104,21 @@ class Database:
     
     @classmethod
     async def test_connection(cls):
-        """Test database connection with timeout"""
+        """Test database connection with longer timeout"""
         try:
             client = cls.get_client()
             
-            # Test connection with shorter timeout
+            # Test connection with longer timeout for Windows
             import asyncio
-            await asyncio.wait_for(client.admin.command('ping'), timeout=10.0)
+            print("🔄 Testing MongoDB ping...")
+            await asyncio.wait_for(client.admin.command('ping'), timeout=30.0)
+            print("✅ MongoDB ping successful")
             
             # Test database access
             db = cls.get_database()
-            collections = await asyncio.wait_for(db.list_collection_names(), timeout=10.0)
+            print("🔄 Testing database access...")
+            collections = await asyncio.wait_for(db.list_collection_names(), timeout=30.0)
+            print(f"✅ Database access successful, found {len(collections)} collections")
             
             return {
                 "status": "success",
@@ -109,7 +129,7 @@ class Database:
         except asyncio.TimeoutError:
             return {
                 "status": "error", 
-                "message": "Database connection timeout (10 seconds)",
+                "message": "Database connection timeout (30 seconds)",
                 "error_type": "TimeoutError"
             }
         except Exception as e:

@@ -104,12 +104,12 @@ export const simpleRegister = async (userData) => {
   return response.data
 }
 
-export const mongodbRegister = async (userData) => {
-  const response = await api.post('/mongodb-register', userData)
+export const atlasRegister = async (userData) => {
+  const response = await api.post('/atlas-register', userData)
   return response.data
 }
 
-export const mongodbLogin = async (userData) => {
-  const response = await api.post('/mongodb-login', userData)
+export const atlasLogin = async (userData) => {
+  const response = await api.post('/atlas-login', userData)
   return response.data
 }

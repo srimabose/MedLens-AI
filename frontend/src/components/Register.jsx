@@ -28,8 +28,8 @@ function Register({ onSwitchToLogin }) {
     try {
       const API_URL = import.meta.env.VITE_API_URL || 'https://medlens-ai-aah4.onrender.com'
       
-      // Use MongoDB-only registration endpoint
-      const response = await fetch(`${API_URL}/mongodb-register`, {
+      // Use Atlas authentication endpoint
+      const response = await fetch(`${API_URL}/atlas-register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

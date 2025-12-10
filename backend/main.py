@@ -75,6 +75,33 @@ async def health_check():
     }
 
 
+@app.get("/atlas-test")
+async def atlas_test():
+    """Test MongoDB Atlas authentication system"""
+    try:
+        from app.atlas_auth import AtlasAuth
+        
+        # Test the Atlas authentication connection
+        result = await AtlasAuth.test_connection()
+        
+        return {
+            "atlas_auth": result,
+            "timestamp": "2024-12-09",
+            "message": "Atlas authentication test completed"
+        }
+        
+    except Exception as e:
+        return {
+            "atlas_auth": {
+                "status": "error",
+                "message": str(e),
+                "error_type": type(e).__name__
+            },
+            "timestamp": "2024-12-09",
+            "message": "Atlas authentication test failed"
+        }
+
+
 @app.post("/test-register")
 async def test_register(data: dict):
     """Test endpoint to debug registration issues"""
@@ -177,23 +204,26 @@ async def simple_register(data: dict):
         return {"status": "error", "message": str(e), "details": traceback.format_exc()}
 
 
-@app.post("/mongodb-register")
-async def mongodb_register(data: dict):
-    """MongoDB-only registration (centralized database)"""
+@app.post("/atlas-register")
+async def atlas_register(data: dict):
+    """Register user with MongoDB Atlas"""
     try:
         email = data.get("email")
         password = data.get("password") 
         full_name = data.get("full_name")
         
-        print(f"🔄 MongoDB registration for: {email}")
+        if not email or not password or not full_name:
+            return {"status": "error", "message": "Email, password, and full name are required"}
         
-        # Import MongoDB auth
-        from app.mongodb_auth import create_mongodb_user
+        print(f"🔄 Atlas registration for: {email}")
+        
+        # Import Atlas auth
+        from app.atlas_auth import register_user
         from app.auth_utils import create_access_token
         from datetime import timedelta
         
-        # Create user in MongoDB Atlas (centralized)
-        user = await create_mongodb_user(email, password, full_name)
+        # Create user in MongoDB Atlas
+        user = await register_user(email, password, full_name)
         
         # Create token
         access_token = create_access_token(
@@ -201,7 +231,7 @@ async def mongodb_register(data: dict):
             expires_delta=timedelta(minutes=1440)  # 24 hours
         )
         
-        print(f"✅ MongoDB user created successfully: {email}")
+        print(f"✅ Atlas user created successfully: {email}")
         
         return {
             "status": "success",
@@ -214,34 +244,35 @@ async def mongodb_register(data: dict):
                 "provider": "email",
                 "is_active": True
             },
-            "message": "Account created in centralized database"
+            "message": "Account created successfully"
         }
         
     except ValueError as e:
         return {"status": "error", "message": str(e)}
     except Exception as e:
-        print(f"❌ MongoDB registration error: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        return {"status": "error", "message": str(e), "details": traceback.format_exc()}
+        print(f"❌ Atlas registration error: {str(e)}")
+        return {"status": "error", "message": str(e)}
 
 
-@app.post("/mongodb-login")
-async def mongodb_login(data: dict):
-    """MongoDB-only login (centralized database)"""
+@app.post("/atlas-login")
+async def atlas_login(data: dict):
+    """Login user with MongoDB Atlas"""
     try:
         email = data.get("email")
         password = data.get("password")
         
-        print(f"🔄 MongoDB login for: {email}")
+        if not email or not password:
+            return {"status": "error", "message": "Email and password are required"}
         
-        # Import MongoDB auth
-        from app.mongodb_auth import authenticate_mongodb_user
+        print(f"🔄 Atlas login for: {email}")
+        
+        # Import Atlas auth
+        from app.atlas_auth import login_user
         from app.auth_utils import create_access_token
         from datetime import timedelta
         
         # Authenticate user from MongoDB Atlas
-        user = await authenticate_mongodb_user(email, password)
+        user = await login_user(email, password)
         if not user:
             return {"status": "error", "message": "Invalid email or password"}
         
@@ -251,7 +282,7 @@ async def mongodb_login(data: dict):
             expires_delta=timedelta(minutes=1440)  # 24 hours
         )
         
-        print(f"✅ MongoDB login successful: {email}")
+        print(f"✅ Atlas login successful: {email}")
         
         return {
             "status": "success",
@@ -264,14 +295,12 @@ async def mongodb_login(data: dict):
                 "provider": "email",
                 "is_active": True
             },
-            "message": "Login successful from centralized database"
+            "message": "Login successful"
         }
         
     except Exception as e:
-        print(f"❌ MongoDB login error: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        return {"status": "error", "message": str(e), "details": traceback.format_exc()}
+        print(f"❌ Atlas login error: {str(e)}")
+        return {"status": "error", "message": str(e)}
 
 
 @app.post("/analyze-report")
