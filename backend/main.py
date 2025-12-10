@@ -58,7 +58,7 @@ async def shutdown_db_client():
 
 @app.get("/")
 def root():
-    return {"message": "MedLens AI API", "status": "running", "version": "1.0.0"}
+    return {"message": "MedLens AI API", "status": "running", "version": "1.0.1", "auth": "mongodb-ready"}
 
 
 @app.get("/health")
